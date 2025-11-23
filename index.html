@@ -41,6 +41,7 @@
             color: var(--ios-text);
             /* 为底部导航栏留出空间 */
             padding-bottom: calc(90px + var(--safe-bottom)); 
+            /* 顶部留白，防止遮挡 */
             padding-top: calc(160px + var(--safe-top));
         }
 
@@ -204,6 +205,8 @@
             gap: 12px;
             padding: 16px;
             background: var(--ios-card);
+            /* 关键：让网格内的项目高度自动拉伸，实现等高布局 */
+            align-items: stretch;
         }
         .region-content.collapsed { display: none; }
 
@@ -211,14 +214,20 @@
         .area-item {
             background: #F2F2F7;
             border-radius: 8px;
-            padding: 12px 4px;
+            padding: 12px 6px; /* 增加左右 padding */
             text-align: center;
             position: relative;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            min-height: 60px;
+            
+            /* 中文固定在顶部 */
+            justify-content: flex-start;
+            padding-top: 14px;
+            
+            /* 关键修改：移除固定高度，使用 flex-grow 撑满高度，但允许内容撑开 */
+            height: 100%; 
+            min-height: 70px;
             transition: transform 0.2s;
         }
 
@@ -229,13 +238,28 @@
         .area-item span {
             font-size: 14px;
             font-weight: 500;
-            line-height: 1.2;
+            
+            /* 关键修改：允许换行，尊重所有地名长度 */
+            white-space: normal; 
+            overflow: visible;
+            text-overflow: unset;
+            
+            display: block;
+            width: 100%;
+            line-height: 1.35; /* 增加行高，多行时更清晰 */
+            margin-bottom: 2px;
         }
 
         .country-en {
             font-size: 10px;
             color: var(--ios-subtext);
-            margin-top: 2px;
+            margin-top: 4px;
+            /* 关键修改：英文也允许换行 */
+            white-space: normal;
+            line-height: 1.25;
+            word-wrap: break-word; /* 防止长单词溢出 */
+            width: 100%;
+            padding: 0 2px;
         }
 
         /* 完成徽章 */
@@ -250,6 +274,7 @@
             display: flex; align-items: center; justify-content: center;
             border: 2px solid var(--ios-card);
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            z-index: 2; /* 确保在最上层 */
         }
 
         /* 高亮样式 */
@@ -664,5 +689,4 @@
         document.addEventListener('DOMContentLoaded', initPage);
     </script>
 </body>
-
 </html>
