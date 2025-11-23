@@ -205,61 +205,69 @@
             gap: 12px;
             padding: 16px;
             background: var(--ios-card);
-            /* 关键：让网格内的项目高度自动拉伸，实现等高布局 */
             align-items: stretch;
         }
         .region-content.collapsed { display: none; }
 
-        /* 目的地胶囊 (Pills) */
+        /* --- 核心修改：目的地胶囊样式 --- */
         .area-item {
             background: #F2F2F7;
             border-radius: 8px;
-            padding: 12px 6px; /* 增加左右 padding */
+            padding: 12px 6px; 
             text-align: center;
             position: relative;
             display: flex;
             flex-direction: column;
-            align-items: center;
+            align-items: center; /* 水平居中 */
             
-            /* 中文固定在顶部 */
+            /* 默认状态（适用于国际部分）：靠上对齐，留出顶部空间 */
             justify-content: flex-start;
             padding-top: 14px;
             
-            /* 关键修改：移除固定高度，使用 flex-grow 撑满高度，但允许内容撑开 */
             height: 100%; 
             min-height: 70px;
             transition: transform 0.2s;
         }
 
-        .area-item:active { transform: scale(0.96); }
+        /* --- 新增：中国区专属样式 --- */
+        /* 当卡片拥有 .china-item 类时，强制垂直居中，去除额外的顶部内边距 */
+        .area-item.china-item {
+            justify-content: center; /* 垂直居中 */
+            padding-top: 12px; /* 恢复正常的上下 padding */
+            padding-bottom: 12px;
+        }
+        
+        /* 针对中国部分的文字，确保不需要底部间距（因为没有英文） */
+        .area-item.china-item span {
+            margin-bottom: 0;
+        }
 
+        .area-item:active { transform: scale(0.96); }
         .area-item a { text-decoration: none; color: inherit; width: 100%; }
         
         .area-item span {
             font-size: 14px;
             font-weight: 500;
-            
-            /* 关键修改：允许换行，尊重所有地名长度 */
             white-space: normal; 
             overflow: visible;
             text-overflow: unset;
-            
             display: block;
             width: 100%;
-            line-height: 1.35; /* 增加行高，多行时更清晰 */
+            line-height: 1.35;
             margin-bottom: 2px;
+            text-align: center; /* 强制文字水平居中 */
         }
 
         .country-en {
             font-size: 10px;
             color: var(--ios-subtext);
             margin-top: 4px;
-            /* 关键修改：英文也允许换行 */
             white-space: normal;
             line-height: 1.25;
-            word-wrap: break-word; /* 防止长单词溢出 */
+            word-wrap: break-word; 
             width: 100%;
             padding: 0 2px;
+            text-align: center;
         }
 
         /* 完成徽章 */
@@ -274,7 +282,7 @@
             display: flex; align-items: center; justify-content: center;
             border: 2px solid var(--ios-card);
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            z-index: 2; /* 确保在最上层 */
+            z-index: 2; 
         }
 
         /* 高亮样式 */
@@ -291,7 +299,7 @@
         /* 搜索建议列表 */
         .suggestions-container {
             position: fixed;
-            top: calc(110px + var(--safe-top)); /* 紧贴 Header 下方 */
+            top: calc(110px + var(--safe-top)); 
             left: 16px; right: 16px;
             background: rgba(255, 255, 255, 0.98);
             backdrop-filter: blur(10px);
@@ -364,8 +372,7 @@
         }
         .toast-msg.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-        /* --- 占位符 ID，必须保留以配合原生 JS --- */
-        .search-btn-hidden { display: none; } /* 原 JS 需要 searchButton */
+        .search-btn-hidden { display: none; } 
     </style>
 </head>
 <body>
@@ -380,7 +387,6 @@
                 <input type="text" class="search-box" id="searchInput" placeholder="搜索目的地 (如: 日本)">
                 <button class="clear-btn" id="clearBtn"><i class="fas fa-times"></i></button>
             </div>
-            <!-- 用于 JS 绑定的隐藏按钮 -->
             <button id="searchButton" class="search-btn-hidden"></button>
         </div>
 
@@ -500,22 +506,18 @@
         </div>
     </div>
 
-    <!-- Toast 提示框 (替代原有的悬浮窗) -->
+    <!-- Toast 提示框 -->
     <div class="toast-msg" id="hintPanel">
         <i class="fas fa-check-circle" style="color:#34C759"></i> 已完成
         <span style="margin: 0 8px; opacity: 0.3">|</span>
         <i class="fas fa-lightbulb" style="color:#FF9F0A"></i> 点击标题折叠
     </div>
 
-    <!-- ============================================== -->
-    <!-- 原有 JavaScript 逻辑 (100% 保留) -->
-    <!-- ============================================== -->
     <script>
         // ------------------------------------------------
         // 新增的 UI 交互脚本 (处理 Tab 切换)
         // ------------------------------------------------
         function switchTab(type, btnElement) {
-            // 1. 处理顶部按钮样式
             document.querySelectorAll('.segment-btn').forEach(btn => btn.classList.remove('active'));
             btnElement.classList.add('active');
             
@@ -526,7 +528,6 @@
                 bg.style.transform = 'translateX(100%)';
             }
 
-            // 2. 切换内容显示
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active-view'));
             if (type === 'china') {
                 document.getElementById('tab-china').classList.add('active-view');
@@ -566,15 +567,36 @@
         function escapeRegExp(string) { return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
         
         function initPage() {
-            // 填充中国数据
-            for (const region in chinaRegions) { const contentElement = document.getElementById(`${region}Content`); if (contentElement) { chinaRegions[region].forEach(province => { const item = document.createElement('div'); item.className = 'area-item'; const regionPrefix = provinceRegionMap[province]; const provinceEn = provinceEnMap[province]; let link = `${regionPrefix}-${provinceEn}.html`; item.innerHTML = `<a href="${link}"><span>${province}</span></a>`; item.dataset.name = province; contentElement.appendChild(item); if (completedChinaProvinces.includes(province)) { const badge = document.createElement('div'); badge.className = 'completed-badge'; badge.innerHTML = '<i class="fas fa-check"></i>'; item.appendChild(badge); } allDestinations.push({name: province, en: null, type: 'china', element: item, completed: completedChinaProvinces.includes(province)}); }); } }
+            // 填充中国数据 - 修改：添加 china-item 类
+            for (const region in chinaRegions) { 
+                const contentElement = document.getElementById(`${region}Content`); 
+                if (contentElement) { 
+                    chinaRegions[region].forEach(province => { 
+                        const item = document.createElement('div'); 
+                        // 这里添加了 china-item 类
+                        item.className = 'area-item china-item'; 
+                        const regionPrefix = provinceRegionMap[province]; 
+                        const provinceEn = provinceEnMap[province]; 
+                        let link = `${regionPrefix}-${provinceEn}.html`; 
+                        item.innerHTML = `<a href="${link}"><span>${province}</span></a>`; 
+                        item.dataset.name = province; 
+                        contentElement.appendChild(item); 
+                        if (completedChinaProvinces.includes(province)) { 
+                            const badge = document.createElement('div'); 
+                            badge.className = 'completed-badge'; 
+                            badge.innerHTML = '<i class="fas fa-check"></i>'; 
+                            item.appendChild(badge); 
+                        } 
+                        allDestinations.push({name: province, en: null, type: 'china', element: item, completed: completedChinaProvinces.includes(province)}); 
+                    }); 
+                } 
+            }
             // 填充世界数据
             for (const continent in countries) { const contentElement = document.getElementById(`${continent}Content`); if (contentElement) { countries[continent].forEach(country => { const countryElement = document.createElement('div'); countryElement.className = 'area-item'; let link; let countryEnName; if (["中国香港", "中国澳门", "中国台湾"].includes(country.name)) { const regionName = country.name.replace("中国", "").trim(); countryEnName = provinceEnMap[`${regionName}${regionName === "台湾" ? "省" : "特别行政区"}`]; link = `China-${countryEnName}.html`; } else { countryEnName = country.en.replace(/,/g, '').replace(/\s+/g, '-'); link = `${continentMap[continent]}-${countryEnName}.html`; } const countryHtml = `<a href="${link}"><span class="country-name">${country.name}</span><span class="country-en">${country.en}</span></a>`; countryElement.innerHTML = countryHtml; countryElement.dataset.name = `${country.name}|${country.en}`; contentElement.appendChild(countryElement); if (country.completed) { const badge = document.createElement('div'); badge.className = 'completed-badge'; badge.innerHTML = '<i class="fas fa-check"></i>'; countryElement.appendChild(badge); } allDestinations.push({name: country.name, en: country.en, type: 'international', element: countryElement, completed: country.completed}); }); } }
             
             addEventListeners(); 
             initCollapseState();
             
-            // 自动显示一次 Toast
             const hintPanel = document.getElementById('hintPanel'); 
             hintPanel.classList.add('show'); 
             setTimeout(() => { hintPanel.classList.remove('show'); }, 3000);
@@ -582,12 +604,10 @@
 
         function initCollapseState() { document.querySelectorAll('.region-header').forEach(header => { header.classList.add('collapsed'); const content = document.getElementById(`${header.dataset.region}Content`); if (content) { content.classList.add('collapsed'); const icon = header.querySelector('i'); if (header.classList.contains('collapsed')) { icon.style.transform = 'rotate(-90deg)'; } } }); }
         
-        // 核心修改：展开区域时，自动切换到对应的 Tab
         function expandRegion(element) { 
             let regionContent = element.closest('.region-content'); 
             if (!regionContent) return; 
             
-            // 检查元素是在中国还是境外，并切换 Tab
             const parentTab = element.closest('.tab-content');
             if (parentTab && !parentTab.classList.contains('active-view')) {
                 if(parentTab.id === 'tab-china') switchTab('china', document.querySelectorAll('.segment-btn')[0]);
@@ -622,17 +642,13 @@
             searchInput.addEventListener('input', function() { const query = this.value.trim().toLowerCase(); updateSearchSuggestions(query); clearBtn.classList.toggle('visible', query.length > 0); });
             clearBtn.addEventListener('click', function() { searchInput.value = ''; updateSearchSuggestions(''); clearBtn.classList.remove('visible'); searchInput.focus(); });
             
-            // 点击外部关闭搜索建议
             document.addEventListener('click', function(e) { if (!searchInput.contains(e.target) && !suggestionsContainer.contains(e.target) && !clearBtn.contains(e.target)) { suggestionsContainer.style.display = 'none'; } });
             
-            // 折叠逻辑
             document.querySelectorAll('.region-header').forEach(header => { header.addEventListener('click', function() { const content = document.getElementById(`${this.dataset.region}Content`); if (!content) return; this.classList.toggle('collapsed'); content.classList.toggle('collapsed'); const icon = this.querySelector('i'); if (this.classList.contains('collapsed')) { icon.style.transform = 'rotate(-90deg)'; } else { icon.style.transform = 'rotate(0deg)'; } }); });
             
-            // 搜索逻辑
             searchButton.addEventListener('click', performSearch); 
             searchInput.addEventListener('keypress', function(e) { if (e.key === 'Enter') { performSearch(); } });
             
-            // 全部展开/折叠 (仅针对当前可见的 Tab)
             collapseExpandBtn.addEventListener('click', function() { 
                 const activeTab = document.querySelector('.tab-content.active-view');
                 const headers = activeTab.querySelectorAll('.region-header'); 
@@ -648,7 +664,6 @@
                         header.classList.add('collapsed'); content.classList.add('collapsed'); header.querySelector('i').style.transform = 'rotate(-90deg)'; 
                     } 
                 }); 
-                // 图标切换无需更改，使用统一逻辑
             });
             
             backToTopBtn.addEventListener('click', scrollToTop); 
@@ -675,7 +690,7 @@
             if (match) { 
                 clearAllHighlights(); 
                 match.element.classList.add('highlight'); 
-                expandRegion(match.element); // 这里的 expandRegion 已经被我们修改为支持自动切换 Tab
+                expandRegion(match.element); 
                 scrollToElement(match.element); 
                 setTimeout(() => { match.element.classList.remove('highlight'); }, 3000); 
             } else { 
