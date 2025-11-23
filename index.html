@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <!-- 视口设置：适配刘海屏，禁止缩放 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Mao's Journey</title>
+    
+    <!-- PWA 配置 -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#F2F2F7">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <!-- 图标库 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            /* iOS 17 风格配色 */
+            --ios-bg: #F2F2F7;
+            --ios-card: #FFFFFF;
+            --ios-text: #000000;
+            --ios-subtext: #8E8E93;
+            --ios-blue: #007AFF;
+            --ios-separator: rgba(60, 60, 67, 0.12);
+            --ios-green: #34C759;
+            --safe-top: env(safe-area-inset-top);
+            --safe-bottom: env(safe-area-inset-bottom);
+        }
+
+        * { 
+            margin: 0; padding: 0; box-sizing: border-box; 
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        body { 
+            background-color: var(--ios-bg);
+            color: var(--ios-text);
+            /* 为底部导航栏留出空间 */
+            padding-bottom: calc(90px + var(--safe-bottom)); 
+            padding-top: calc(130px + var(--safe-top));
+        }
+
+        /* --- 顶部固定区域 (Header + Search + Tabs) --- */
+        .fixed-header {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            background: rgba(242, 242, 247, 0.85);
+            backdrop-filter: saturate(180%) blur(20px);
+            -webkit-backdrop-filter: saturate(180%) blur(20px);
+            z-index: 1000;
+            padding-top: max(12px, var(--safe-top));
+            border-bottom: 0.5px solid rgba(0,0,0,0.1);
+        }
+
+        .app-title {
+            text-align: center;
+            font-size: 17px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            opacity: 0.9;
+        }
+
+        /* 搜索框容器 */
+        .search-wrapper {
+            padding: 0 16px 12px;
+            position: relative;
+        }
+
+        .search-input-group {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .search-box {
+            width: 100%;
+            height: 40px;
+            background: rgba(118, 118, 128, 0.12);
+            border: none;
+            border-radius: 10px;
+            padding: 0 40px 0 36px;
+            font-size: 17px;
+            color: var(--ios-text);
+        }
+        
+        .search-box::placeholder { color: var(--ios-subtext); }
+        .search-box:focus { outline: none; background: rgba(118, 118, 128, 0.18); }
+
+        .search-icon {
+            position: absolute; left: 10px;
+            color: var(--ios-subtext); font-size: 16px;
+        }
+
+        .clear-btn {
+            position: absolute; right: 10px;
+            background: #8E8E93; color: white;
+            border: none; border-radius: 50%;
+            width: 16px; height: 16px;
+            font-size: 10px; display: none;
+            align-items: center; justify-content: center;
+        }
+        .clear-btn.visible { display: flex; }
+
+        /* 分段控制器 (Segmented Control) */
+        .segmented-control {
+            display: flex;
+            margin: 0 16px 12px;
+            background: rgba(118, 118, 128, 0.12);
+            border-radius: 9px;
+            padding: 2px;
+            position: relative;
+        }
+
+        .segment-btn {
+            flex: 1;
+            text-align: center;
+            padding: 6px 0;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--ios-text);
+            z-index: 2;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .segment-btn.active {
+            font-weight: 600;
+        }
+
+        /* 滑块动画背景 */
+        .segment-bg {
+            position: absolute;
+            top: 2px; left: 2px;
+            width: calc(50% - 2px);
+            height: calc(100% - 4px);
+            background: #fff;
+            border-radius: 7px;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.12);
+            transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+            z-index: 1;
+        }
+
+        /* --- 主要内容区域 --- */
+        .tab-content {
+            display: none;
+            padding: 0 16px;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .tab-content.active-view {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 区域卡片 */
+        .region-card {
+            background: var(--ios-card);
+            border-radius: 12px;
+            margin-bottom: 16px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+        }
+
+        .region-header {
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            border-bottom: 0.5px solid transparent;
+            transition: background 0.2s;
+        }
+
+        .region-header:active { background: #F2F2F7; }
+        
+        /* 展开时的分割线 */
+        .region-header:not(.collapsed) {
+            border-bottom-color: var(--ios-separator);
+        }
+
+        .region-header span { display: flex; align-items: center; gap: 8px; }
+        .region-header i { 
+            color: #C7C7CC; 
+            font-size: 14px; 
+            transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1); 
+        }
+        
+        .region-header.collapsed i { transform: rotate(-90deg); }
+
+        /* 网格布局 */
+        .region-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+            gap: 12px;
+            padding: 16px;
+            background: var(--ios-card);
+        }
+        .region-content.collapsed { display: none; }
+
+        /* 目的地胶囊 (Pills) */
+        .area-item {
+            background: #F2F2F7;
+            border-radius: 8px;
+            padding: 12px 4px;
+            text-align: center;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 60px;
+            transition: transform 0.2s;
+        }
+
+        .area-item:active { transform: scale(0.96); }
+
+        .area-item a { text-decoration: none; color: inherit; width: 100%; }
+        
+        .area-item span {
+            font-size: 14px;
+            font-weight: 500;
+            line-height: 1.2;
+        }
+
+        .country-en {
+            font-size: 10px;
+            color: var(--ios-subtext);
+            margin-top: 2px;
+        }
+
+        /* 完成徽章 */
+        .completed-badge {
+            position: absolute;
+            top: -6px; right: -6px;
+            background: var(--ios-green);
+            color: white;
+            width: 18px; height: 18px;
+            border-radius: 50%;
+            font-size: 10px;
+            display: flex; align-items: center; justify-content: center;
+            border: 2px solid var(--ios-card);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        /* 高亮样式 */
+        .highlight {
+            background: #FFF4CE !important;
+            box-shadow: 0 0 0 2px #FFD60A inset;
+            animation: pulse 1s infinite;
+        }
+        
+        .match-highlight { border: 1px solid var(--ios-blue); background: #EAF4FF; }
+
+        @keyframes pulse { 50% { transform: scale(1.05); } }
+
+        /* 搜索建议列表 */
+        .suggestions-container {
+            position: fixed;
+            top: calc(110px + var(--safe-top)); /* 紧贴 Header 下方 */
+            left: 16px; right: 16px;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            max-height: 50vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            z-index: 2000;
+            display: none;
+        }
+
+        .suggestion-item {
+            padding: 14px 16px;
+            border-bottom: 0.5px solid var(--ios-separator);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .suggestion-item:last-child { border-bottom: none; }
+        .highlight-text { color: var(--ios-blue); font-weight: 600; }
+
+        /* --- 底部工具栏 (Bottom Tab Bar) --- */
+        .bottom-toolbar {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            height: calc(60px + var(--safe-bottom));
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 0.5px solid rgba(0,0,0,0.15);
+            display: flex;
+            justify-content: space-around;
+            padding-bottom: var(--safe-bottom);
+            z-index: 1000;
+        }
+
+        .tool-btn {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--ios-subtext);
+            font-size: 10px;
+            gap: 4px;
+            cursor: pointer;
+        }
+        
+        .tool-btn i { font-size: 20px; margin-bottom: 2px; }
+        .tool-btn:active { color: var(--ios-blue); opacity: 0.7; }
+
+        /* 提示 Toast */
+        .toast-msg {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 14px;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s;
+            z-index: 3000;
+            white-space: nowrap;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .toast-msg.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+        /* --- 占位符 ID，必须保留以配合原生 JS --- */
+        .search-btn-hidden { display: none; } /* 原 JS 需要 searchButton */
+    </style>
+</head>
+<body>
+
+    <!-- 1. 顶部固定区域 -->
+    <div class="fixed-header">
+        <div class="app-title">Mao's Journey</div>
+        
+        <div class="search-wrapper">
+            <div class="search-input-group">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" class="search-box" id="searchInput" placeholder="搜索目的地 (如: 日本)">
+                <button class="clear-btn" id="clearBtn"><i class="fas fa-times"></i></button>
+            </div>
+            <!-- 用于 JS 绑定的隐藏按钮 -->
+            <button id="searchButton" class="search-btn-hidden"></button>
+        </div>
+
+        <div class="segmented-control">
+            <div class="segment-bg" id="segmentBg"></div>
+            <div class="segment-btn active" onclick="switchTab('china', this)">🇨🇳 探索中国</div>
+            <div class="segment-btn" onclick="switchTab('world', this)">🌍 环游世界</div>
+        </div>
+    </div>
+
+    <!-- 搜索建议悬浮层 -->
+    <div class="suggestions-container" id="suggestionsContainer"></div>
+
+    <!-- 2. 主要内容区域 (Tab 1: 中国) -->
+    <div id="tab-china" class="tab-content active-view">
+        <div class="region-card">
+            <div class="region-header" data-region="northNortheastChina">
+                <span>华北-东北地区</span><i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="region-content" id="northNortheastChinaContent"></div>
+        </div>
+        
+        <div class="region-card">
+            <div class="region-header" data-region="eastChina">
+                <span>华东地区</span><i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="region-content" id="eastChinaContent"></div>
+        </div>
+
+        <div class="region-card">
+            <div class="region-header" data-region="centralSouthChina">
+                <span>华中-华南地区</span><i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="region-content" id="centralSouthChinaContent"></div>
+        </div>
+
+        <div class="region-card">
+            <div class="region-header" data-region="southwestChina">
+                <span>西南地区</span><i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="region-content" id="southwestChinaContent"></div>
+        </div>
+
+        <div class="region-card">
+            <div class="region-header" data-region="northwestChina">
+                <span>西北地区</span><i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="region-content" id="northwestChinaContent"></div>
+        </div>
+
+        <div class="region-card">
+            <div class="region-header" data-region="hmtChina">
+                <span>港澳台地区</span><i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="region-content" id="hmtChinaContent"></div>
+        </div>
+    </div>
+
+    <!-- 3. 主要内容区域 (Tab 2: 境外) -->
+    <div id="tab-world" class="tab-content">
+        <div class="region-card">
+            <div class="region-header" data-region="asia">
+                <span>亚洲 (Asia)</span><i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="region-content" id="asiaContent"></div>
+        </div>
+
+        <div class="region-card">
+            <div class="region-header" data-region="europe">
+                <span>欧洲 (Europe)</span><i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="region-content" id="europeContent"></div>
+        </div>
+
+        <div class="region-card">
+            <div class="region-header" data-region="northAmerica">
+                <span>北美洲 (North America)</span><i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="region-content" id="northAmericaContent"></div>
+        </div>
+
+        <div class="region-card">
+            <div class="region-header" data-region="southAmerica">
+                <span>南美洲 (South America)</span><i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="region-content" id="southAmericaContent"></div>
+        </div>
+
+        <div class="region-card">
+            <div class="region-header" data-region="oceania">
+                <span>大洋洲 (Oceania)</span><i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="region-content" id="oceaniaContent"></div>
+        </div>
+
+        <div class="region-card">
+            <div class="region-header" data-region="africa">
+                <span>非洲 (Africa)</span><i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="region-content" id="africaContent"></div>
+        </div>
+    </div>
+
+    <!-- 4. 底部工具栏 -->
+    <div class="bottom-toolbar">
+        <div class="tool-btn" id="hintBtn">
+            <i class="far fa-question-circle"></i>
+            <span>说明</span>
+        </div>
+        <div class="tool-btn" id="collapseExpandBtn">
+            <i class="fas fa-compress-alt"></i>
+            <span>折叠/展开</span>
+        </div>
+        <div class="tool-btn" id="backToTop">
+            <i class="fas fa-arrow-up"></i>
+            <span>顶部</span>
+        </div>
+    </div>
+
+    <!-- Toast 提示框 (替代原有的悬浮窗) -->
+    <div class="toast-msg" id="hintPanel">
+        <i class="fas fa-check-circle" style="color:#34C759"></i> 已完成
+        <span style="margin: 0 8px; opacity: 0.3">|</span>
+        <i class="fas fa-lightbulb" style="color:#FF9F0A"></i> 点击标题折叠
+    </div>
+
+    <!-- ============================================== -->
+    <!-- 原有 JavaScript 逻辑 (100% 保留) -->
+    <!-- ============================================== -->
+    <script>
+        // ------------------------------------------------
+        // 新增的 UI 交互脚本 (处理 Tab 切换)
+        // ------------------------------------------------
+        function switchTab(type, btnElement) {
+            // 1. 处理顶部按钮样式
+            document.querySelectorAll('.segment-btn').forEach(btn => btn.classList.remove('active'));
+            btnElement.classList.add('active');
+            
+            const bg = document.getElementById('segmentBg');
+            if (type === 'china') {
+                bg.style.transform = 'translateX(0)';
+            } else {
+                bg.style.transform = 'translateX(100%)';
+            }
+
+            // 2. 切换内容显示
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active-view'));
+            if (type === 'china') {
+                document.getElementById('tab-china').classList.add('active-view');
+            } else {
+                document.getElementById('tab-world').classList.add('active-view');
+            }
+            
+            window.scrollTo({top: 0, behavior: 'smooth'});
+        }
+
+        // ------------------------------------------------
+        // 原有核心逻辑 (Copy from original)
+        // ------------------------------------------------
+        const completedChinaProvinces = ["北京市", "江苏省", "香港特别行政区", "四川省", "重庆市"];
+        const chinaRegions = {
+            northNortheastChina: ["北京市", "天津市", "河北省", "山西省", "内蒙古自治区", "辽宁省", "吉林省", "黑龙江省"],
+            eastChina: ["上海市", "江苏省", "浙江省", "安徽省", "福建省", "江西省", "山东省"],
+            centralSouthChina: ["河南省", "湖北省", "湖南省", "广东省", "广西壮族自治区", "海南省"],
+            southwestChina: ["重庆市", "四川省", "贵州省", "云南省", "西藏自治区"],
+            northwestChina: ["陕西省", "甘肃省", "青海省", "宁夏回族自治区", "新疆维吾尔自治区"],
+            hmtChina: ["香港特别行政区", "澳门特别行政区", "台湾省"]
+        };
+        const countries = {
+            asia: [{name: "日本", en: "Japan", completed: true}, {name: "韩国", en: "South Korea", completed: false}, {name: "越南", en: "Vietnam", completed: true}, {name: "泰国", en: "Thailand", completed: false}, {name: "新加坡", en: "Singapore", completed: false}, {name: "马来西亚", en: "Malaysia", completed: false}, {name: "印度尼西亚", en: "Indonesia", completed: false}, {name: "菲律宾", en: "Philippines", completed: false}, {name: "柬埔寨", en: "Cambodia", completed: false}, {name: "老挝", en: "Laos", completed: false}, {name: "斯里兰卡", en: "Sri Lanka", completed: false}, {name: "马尔代夫", en: "Maldives", completed: false}, {name: "阿联酋", en: "United Arab Emirates", completed: false}, {name: "土耳其", en: "Turkey", completed: false}, {name: "中国香港", en: "Hong Kong, China", completed: true}, {name: "中国澳门", en: "Macao, China", completed: false}, {name: "中国台湾", en: "Taiwan, China", completed: false}],
+            europe: [{name: "英国", en: "United Kingdom", completed: false}, {name: "法国", en: "France", completed: false}, {name: "德国", en: "Germany", completed: false}, {name: "意大利", en: "Italy", completed: false}, {name: "西班牙", en: "Spain", completed: false}, {name: "葡萄牙", en: "Portugal", completed: false}, {name: "荷兰", en: "Netherlands", completed: false}, {name: "比利时", en: "Belgium", completed: false}, {name: "瑞士", en: "Switzerland", completed: false}, {name: "奥地利", en: "Austria", completed: false}, {name: "希腊", en: "Greece", completed: false}, {name: "冰岛", en: "Iceland", completed: false}, {name: "挪威", en: "Norway", completed: false}, {name: "瑞典", en: "Sweden", completed: false}, {name: "丹麦", en: "Denmark", completed: false}, {name: "芬兰", en: "Finland", completed: false}, {name: "俄罗斯", en: "Russia", completed: false}, {name: "捷克", en: "Czech Republic", completed: false}, {name: "匈牙利", en: "Hungary", completed: false}, {name: "波兰", en: "Poland", completed: false}],
+            northAmerica: [{name: "美国", en: "United States", completed: false}, {name: "加拿大", en: "Canada", completed: false}, {name: "墨西哥", en: "Mexico", completed: false}, {name: "古巴", en: "Cuba", completed: false}, {name: "哥斯达黎加", en: "Costa Rica", completed: false}, {name: "巴拿马", en: "Panama", completed: false}],
+            southAmerica: [{name: "巴西", en: "Brazil", completed: false}, {name: "阿根廷", en: "Argentina", completed: false}, {name: "智利", en: "Chile", completed: false}, {name: "秘鲁", en: "Peru", completed: false}, {name: "哥伦比亚", en: "Colombia", completed: false}],
+            oceania: [{name: "澳大利亚", en: "Australia", completed: false}, {name: "新西兰", en: "New Zealand", completed: false}, {name: "斐济", en: "Fiji", completed: false}, {name: "萨摩亚", en: "Samoa", completed: false}, {name: "汤加", en: "Tonga", completed: false}, {name: "法属波利尼西亚", en: "French Polynesia", completed: false}],
+            africa: [{name: "埃及", en: "Egypt", completed: false}, {name: "南非", en: "South Africa", completed: false}, {name: "肯尼亚", en: "Kenya", completed: false}, {name: "摩洛哥", en: "Morocco", completed: false}, {name: "坦桑尼亚", en: "Tanzania", completed: false}]
+        };
+        let allDestinations = [];
+        const provinceEnMap = {"北京市": "Beijing", "天津市": "Tianjin", "河北省": "Hebei", "山西省": "Shanxi", "内蒙古自治区": "InnerMongolia", "辽宁省": "Liaoning", "吉林省": "Jilin", "黑龙江省": "Heilongjiang", "上海市": "Shanghai", "江苏省": "Jiangsu", "浙江省": "Zhejiang", "安徽省": "Anhui", "福建省": "Fujian", "江西省": "Jiangxi", "山东省": "Shandong", "河南省": "Henan", "湖北省": "Hubei", "湖南省": "Hunan", "广东省": "Guangdong", "广西壮族自治区": "Guangxi", "海南省": "Hainan", "重庆市": "Chongqing", "四川省": "Sichuan", "贵州省": "Guizhou", "云南省": "Yunnan", "西藏自治区": "Tibet", "陕西省": "Shaanxi", "甘肃省": "Gansu", "青海省": "Qinghai", "宁夏回族自治区": "Ningxia", "新疆维吾尔自治区": "Xinjiang", "香港特别行政区": "HongKong", "澳门特别行政区": "Macao", "台湾省": "Taiwan"};
+        const provinceRegionMap = {"北京市": "NorthChina", "天津市": "NorthChina", "河北省": "NorthChina", "山西省": "NorthChina", "内蒙古自治区": "NorthChina", "辽宁省": "NortheastChina", "吉林省": "NortheastChina", "黑龙江省": "NortheastChina", "上海市": "EastChina", "江苏省": "EastChina", "浙江省": "EastChina", "安徽省": "EastChina", "福建省": "EastChina", "江西省": "EastChina", "山东省": "EastChina", "河南省": "CentralChina", "湖北省": "CentralChina", "湖南省": "CentralChina", "广东省": "SouthChina", "广西壮族自治区": "SouthChina", "海南省": "SouthChina", "重庆市": "SouthwestChina", "四川省": "SouthwestChina", "贵州省": "SouthwestChina", "云南省": "SouthwestChina", "西藏自治区": "SouthwestChina", "陕西省": "NorthwestChina", "甘肃省": "NorthwestChina", "青海省": "NorthwestChina", "宁夏回族自治区": "NorthwestChina", "新疆维吾尔自治区": "NorthwestChina", "香港特别行政区": "China", "澳门特别行政区": "China", "台湾省": "China"};
+        const continentMap = {asia: "Asia", europe: "Europe", northAmerica: "NorthAmerica", southAmerica: "SouthAmerica", oceania: "Oceania", africa: "Africa"};
+
+        function highlightMatch(text, query) { if (!query) return text; const regex = new RegExp(`(${escapeRegExp(query)})`, 'gi'); return text.replace(regex, '<span class="highlight-text">$1</span>'); }
+        function escapeRegExp(string) { return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+        
+        function initPage() {
+            // 填充中国数据
+            for (const region in chinaRegions) { const contentElement = document.getElementById(`${region}Content`); if (contentElement) { chinaRegions[region].forEach(province => { const item = document.createElement('div'); item.className = 'area-item'; const regionPrefix = provinceRegionMap[province]; const provinceEn = provinceEnMap[province]; let link = `${regionPrefix}-${provinceEn}.html`; item.innerHTML = `<a href="${link}"><span>${province}</span></a>`; item.dataset.name = province; contentElement.appendChild(item); if (completedChinaProvinces.includes(province)) { const badge = document.createElement('div'); badge.className = 'completed-badge'; badge.innerHTML = '<i class="fas fa-check"></i>'; item.appendChild(badge); } allDestinations.push({name: province, en: null, type: 'china', element: item, completed: completedChinaProvinces.includes(province)}); }); } }
+            // 填充世界数据
+            for (const continent in countries) { const contentElement = document.getElementById(`${continent}Content`); if (contentElement) { countries[continent].forEach(country => { const countryElement = document.createElement('div'); countryElement.className = 'area-item'; let link; let countryEnName; if (["中国香港", "中国澳门", "中国台湾"].includes(country.name)) { const regionName = country.name.replace("中国", "").trim(); countryEnName = provinceEnMap[`${regionName}${regionName === "台湾" ? "省" : "特别行政区"}`]; link = `China-${countryEnName}.html`; } else { countryEnName = country.en.replace(/,/g, '').replace(/\s+/g, '-'); link = `${continentMap[continent]}-${countryEnName}.html`; } const countryHtml = `<a href="${link}"><span class="country-name">${country.name}</span><span class="country-en">${country.en}</span></a>`; countryElement.innerHTML = countryHtml; countryElement.dataset.name = `${country.name}|${country.en}`; contentElement.appendChild(countryElement); if (country.completed) { const badge = document.createElement('div'); badge.className = 'completed-badge'; badge.innerHTML = '<i class="fas fa-check"></i>'; countryElement.appendChild(badge); } allDestinations.push({name: country.name, en: country.en, type: 'international', element: countryElement, completed: country.completed}); }); } }
+            
+            addEventListeners(); 
+            initCollapseState();
+            
+            // 自动显示一次 Toast
+            const hintPanel = document.getElementById('hintPanel'); 
+            hintPanel.classList.add('show'); 
+            setTimeout(() => { hintPanel.classList.remove('show'); }, 3000);
+        }
+
+        function initCollapseState() { document.querySelectorAll('.region-header').forEach(header => { header.classList.add('collapsed'); const content = document.getElementById(`${header.dataset.region}Content`); if (content) { content.classList.add('collapsed'); const icon = header.querySelector('i'); if (header.classList.contains('collapsed')) { icon.style.transform = 'rotate(-90deg)'; } } }); }
+        
+        // 核心修改：展开区域时，自动切换到对应的 Tab
+        function expandRegion(element) { 
+            let regionContent = element.closest('.region-content'); 
+            if (!regionContent) return; 
+            
+            // 检查元素是在中国还是境外，并切换 Tab
+            const parentTab = element.closest('.tab-content');
+            if (parentTab && !parentTab.classList.contains('active-view')) {
+                if(parentTab.id === 'tab-china') switchTab('china', document.querySelectorAll('.segment-btn')[0]);
+                else switchTab('world', document.querySelectorAll('.segment-btn')[1]);
+            }
+
+            const regionId = regionContent.id.replace('Content', ''); 
+            const regionHeader = document.querySelector(`.region-header[data-region="${regionId}"]`); 
+            if (regionHeader && regionHeader.classList.contains('collapsed')) { 
+                regionHeader.classList.remove('collapsed'); 
+                regionContent.classList.remove('collapsed'); 
+                const icon = regionHeader.querySelector('i'); 
+                icon.style.transform = 'rotate(0deg)'; 
+            } 
+        }
+        
+        function clearAllHighlights() { document.querySelectorAll('.highlight').forEach(el => { el.classList.remove('highlight'); }); document.querySelectorAll('.match-highlight').forEach(el => { el.classList.remove('match-highlight'); }); }
+        
+        function addEventListeners() {
+            const searchInput = document.getElementById('searchInput'); 
+            const searchButton = document.getElementById('searchButton'); 
+            const clearBtn = document.getElementById('clearBtn'); 
+            const suggestionsContainer = document.getElementById('suggestionsContainer'); 
+            const collapseExpandBtn = document.getElementById('collapseExpandBtn'); 
+            const backToTopBtn = document.getElementById('backToTop'); 
+            const hintBtn = document.getElementById('hintBtn'); 
+            const hintPanel = document.getElementById('hintPanel'); 
+            let hintTimeout;
+
+            function updateSearchSuggestions(query) { suggestionsContainer.innerHTML = ''; if (query.length === 0) { suggestionsContainer.style.display = 'none'; document.querySelectorAll('.match-highlight').forEach(el => { el.classList.remove('match-highlight'); }); return; } const matches = allDestinations.filter(dest => { return ((dest.name && dest.name.toLowerCase().includes(query)) || (dest.en && dest.en.toLowerCase().includes(query))); }); if (matches.length > 0) { matches.forEach(dest => { const suggestion = document.createElement('div'); suggestion.className = 'suggestion-item'; const highlightedName = highlightMatch(dest.name, query); let highlightedEn = ''; if (dest.en) { highlightedEn = highlightMatch(dest.en, query); } suggestion.innerHTML = `<div class="suggestion-name">${highlightedName}</div>${dest.en ? `<div class="suggestion-en">${highlightedEn}</div>` : ''}`; suggestion.addEventListener('click', function() { searchInput.value = dest.name; clearAllHighlights(); dest.element.classList.add('highlight'); expandRegion(dest.element); scrollToElement(dest.element); setTimeout(() => { dest.element.classList.remove('highlight'); }, 3000); suggestionsContainer.style.display = 'none'; }); suggestionsContainer.appendChild(suggestion); }); suggestionsContainer.style.display = 'block'; } else { suggestionsContainer.style.display = 'none'; } document.querySelectorAll('.match-highlight').forEach(el => { el.classList.remove('match-highlight'); }); matches.forEach(dest => { dest.element.classList.add('match-highlight'); }); }
+            
+            searchInput.addEventListener('input', function() { const query = this.value.trim().toLowerCase(); updateSearchSuggestions(query); clearBtn.classList.toggle('visible', query.length > 0); });
+            clearBtn.addEventListener('click', function() { searchInput.value = ''; updateSearchSuggestions(''); clearBtn.classList.remove('visible'); searchInput.focus(); });
+            
+            // 点击外部关闭搜索建议
+            document.addEventListener('click', function(e) { if (!searchInput.contains(e.target) && !suggestionsContainer.contains(e.target) && !clearBtn.contains(e.target)) { suggestionsContainer.style.display = 'none'; } });
+            
+            // 折叠逻辑
+            document.querySelectorAll('.region-header').forEach(header => { header.addEventListener('click', function() { const content = document.getElementById(`${this.dataset.region}Content`); if (!content) return; this.classList.toggle('collapsed'); content.classList.toggle('collapsed'); const icon = this.querySelector('i'); if (this.classList.contains('collapsed')) { icon.style.transform = 'rotate(-90deg)'; } else { icon.style.transform = 'rotate(0deg)'; } }); });
+            
+            // 搜索逻辑
+            searchButton.addEventListener('click', performSearch); 
+            searchInput.addEventListener('keypress', function(e) { if (e.key === 'Enter') { performSearch(); } });
+            
+            // 全部展开/折叠 (仅针对当前可见的 Tab)
+            collapseExpandBtn.addEventListener('click', function() { 
+                const activeTab = document.querySelector('.tab-content.active-view');
+                const headers = activeTab.querySelectorAll('.region-header'); 
+                let allCollapsed = true; 
+                headers.forEach(header => { if (!header.classList.contains('collapsed')) { allCollapsed = false; } }); 
+                
+                headers.forEach(header => { 
+                    const content = document.getElementById(`${header.dataset.region}Content`); 
+                    if (!content) return; 
+                    if (allCollapsed) { 
+                        header.classList.remove('collapsed'); content.classList.remove('collapsed'); header.querySelector('i').style.transform = 'rotate(0deg)'; 
+                    } else { 
+                        header.classList.add('collapsed'); content.classList.add('collapsed'); header.querySelector('i').style.transform = 'rotate(-90deg)'; 
+                    } 
+                }); 
+                // 图标切换无需更改，使用统一逻辑
+            });
+            
+            backToTopBtn.addEventListener('click', scrollToTop); 
+            
+            hintBtn.addEventListener('click', function(e) { 
+                e.stopPropagation(); 
+                hintPanel.classList.toggle('show'); 
+                if (hintTimeout) clearTimeout(hintTimeout); 
+                if (hintPanel.classList.contains('show')) { hintTimeout = setTimeout(() => { hintPanel.classList.remove('show'); }, 3000); } 
+            });
+            
+            document.addEventListener('click', function(e) { if (!hintBtn.contains(e.target) && !hintPanel.contains(e.target)) { hintPanel.classList.remove('show'); } });
+        }
+        
+        function performSearch() { 
+            const query = document.getElementById('searchInput').value.trim(); 
+            if (!query) return; 
+            document.getElementById('suggestionsContainer').style.display = 'none'; 
+            const keywordMap = { "香港": "中国香港", "澳门": "中国澳门", "台湾": "中国台湾" }; 
+            const searchQuery = keywordMap[query] || query; 
+            
+            const match = allDestinations.find(dest => { return ((dest.name && dest.name.toLowerCase() === searchQuery.toLowerCase()) || (dest.en && dest.en.toLowerCase() === searchQuery.toLowerCase())); }); 
+            
+            if (match) { 
+                clearAllHighlights(); 
+                match.element.classList.add('highlight'); 
+                expandRegion(match.element); // 这里的 expandRegion 已经被我们修改为支持自动切换 Tab
+                scrollToElement(match.element); 
+                setTimeout(() => { match.element.classList.remove('highlight'); }, 3000); 
+            } else { 
+                alert(`没有找到 "${query}"。请尝试从下拉列表中选择。`); 
+            } 
+        }
+        
+        function scrollToElement(element) { element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' }); }
+        function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+        
+        document.addEventListener('DOMContentLoaded', initPage);
+    </script>
+</body>
+</html>
