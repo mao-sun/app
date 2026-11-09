@@ -1,4 +1,4 @@
-// Muse Usage Widget v7 for Scriptable (iOS)
+// Muse Usage Widget v8 for Scriptable (iOS)
 // 蓝色主题 + 敲电脑形象（BASE64 内嵌）+ 圆角胶囊进度条
 // 数据源：GitHub 上的 usage.json，由 Muse 每 3 小时自动更新
 
@@ -33,7 +33,7 @@ function fmtDate(d) {
 function barWidth() {
   const f = config.widgetFamily;
   if (f === "medium" || f === "large") return 296;
-  return 128;
+  return 138;
 }
 
 function progressBar(pct) {
@@ -86,7 +86,7 @@ grad.locations = [0, 0.55, 1];
 widget.backgroundGradient = grad;
 widget.setPadding(12, 12, 12, 12);
 
-widget.addSpacer();
+widget.addSpacer(4);
 const main = widget.addStack();
 main.layoutHorizontally();
 main.topAlignContent();
@@ -100,7 +100,7 @@ try {
     tile.cornerRadius = 16;
     tile.setPadding(3, 3, 3, 3);
     const im = tile.addImage(avatar);
-    im.imageSize = new Size(64, 64);
+    im.imageSize = new Size(74, 74);
     im.cornerRadius = 13;
   }
 } catch (e) {}
@@ -110,21 +110,21 @@ main.addSpacer(8);
 const right = main.addStack();
 right.layoutVertically();
 const title = right.addText("Muse");
-title.font = Font.boldSystemFont(13);
+title.font = Font.boldSystemFont(14);
 title.textColor = new Color("#bfe3ff");
 const label = right.addText("本周剩余");
-label.font = Font.systemFont(11);
+label.font = Font.systemFont(12);
 label.textColor = new Color("#d7efff");
 right.addSpacer(2);
 const big = right.addText(`${data.percentLeft}%`);
-big.font = Font.boldSystemFont(26);
+big.font = Font.boldSystemFont(30);
 big.textColor = Color.white();
 
-widget.addSpacer(14);
+widget.addSpacer(20);
 const bar = widget.addImage(progressBar(data.percentLeft));
 bar.imageSize = new Size(barWidth(), 14);
 
-widget.addSpacer(8);
+widget.addSpacer(9);
 const upd = data.updatedAt ? new Date(data.updatedAt) : new Date();
 const u = widget.addText(fmtDate(upd));
 u.font = Font.systemFont(10);
