@@ -1,4 +1,4 @@
-// Muse Usage Widget v6 for Scriptable (iOS)
+// Muse Usage Widget v7 for Scriptable (iOS)
 // 蓝色主题 + 敲电脑形象（BASE64 内嵌）+ 圆角胶囊进度条
 // 数据源：GitHub 上的 usage.json，由 Muse 每 3 小时自动更新
 
@@ -125,15 +125,10 @@ const bar = widget.addImage(progressBar(data.percentLeft));
 bar.imageSize = new Size(barWidth(), 14);
 
 widget.addSpacer(8);
-const chip = widget.addStack();
-chip.layoutHorizontally();
-chip.backgroundColor = new Color("#ffffff", 0.18);
-chip.cornerRadius = 8;
-chip.setPadding(4, 8, 4, 8);
 const upd = data.updatedAt ? new Date(data.updatedAt) : new Date();
-const u = chip.addText(`Updated ${fmtDate(upd)}`);
+const u = widget.addText(fmtDate(upd));
 u.font = Font.systemFont(10);
-u.textColor = new Color("#eaf6ff");
+u.textColor = new Color("#a8d4f5");
 widget.addSpacer();
 
 widget.url = "https://muse.ai/chat";
