@@ -1,4 +1,4 @@
-// Muse Usage Widget v5 for Scriptable (iOS)
+// Muse Usage Widget v6 for Scriptable (iOS)
 // 蓝色主题 + 敲电脑形象（BASE64 内嵌）+ 圆角胶囊进度条
 // 数据源：GitHub 上的 usage.json，由 Muse 每 3 小时自动更新
 
@@ -37,7 +37,7 @@ function barWidth() {
 }
 
 function progressBar(pct) {
-  const W = barWidth(), H = 12, R = H / 2;
+  const W = barWidth(), H = 14, R = H / 2;
   const ctx = new DrawContext();
   ctx.size = new Size(W, H);
   ctx.opaque = false;
@@ -54,9 +54,26 @@ function progressBar(pct) {
   ctx.addPath(fill);
   ctx.setFillColor(new Color("#4cc3ff"));
   ctx.fillPath();
-  if (clamped > 4 && clamped < 97) {
-    ctx.setFillColor(new Color("#ffffff", 0.95));
-    ctx.fillEllipse(new Rect(fillW - 10, 2, 8, 8));
+  if (fillW > W * 0.3) {
+    const segX = Math.round(fillW * 0.55);
+    const seg = new Path();
+    seg.addRoundedRect(new Rect(segX, 0, fillW - segX, H), R, R);
+    ctx.addPath(seg);
+    ctx.setFillColor(new Color("#1f8ae0", 0.65));
+    ctx.fillPath();
+  }
+  [0.25, 0.5, 0.75].forEach(t => {
+    const x = Math.round(W * t);
+    if (x > fillW + 4) {
+      ctx.setFillColor(new Color("#ffffff", 0.45));
+      ctx.fillEllipse(new Rect(x - 2, H / 2 - 2, 4, 4));
+    }
+  });
+  if (clamped > 8 && clamped < 97) {
+    ctx.setFillColor(new Color("#ffffff", 0.98));
+    ctx.fillEllipse(new Rect(fillW - 12, 2, 10, 10));
+    ctx.setFillColor(new Color("#0b63c4"));
+    ctx.fillEllipse(new Rect(fillW - 9.5, 4.5, 5, 5));
   }
   return ctx.getImage();
 }
@@ -74,21 +91,6 @@ const main = widget.addStack();
 main.layoutHorizontally();
 main.topAlignContent();
 
-const left = main.addStack();
-left.layoutVertically();
-const title = left.addText("Muse");
-title.font = Font.boldSystemFont(13);
-title.textColor = new Color("#bfe3ff");
-const label = left.addText("本周剩余");
-label.font = Font.systemFont(11);
-label.textColor = new Color("#d7efff");
-left.addSpacer(2);
-const big = left.addText(`${data.percentLeft}%`);
-big.font = Font.boldSystemFont(28);
-big.textColor = Color.white();
-
-main.addSpacer();
-
 try {
   const imgData = Data.fromBase64String(AVATAR_BASE64);
   const avatar = imgData ? Image.fromData(imgData) : null;
@@ -98,20 +100,40 @@ try {
     tile.cornerRadius = 16;
     tile.setPadding(3, 3, 3, 3);
     const im = tile.addImage(avatar);
-    im.imageSize = new Size(60, 60);
+    im.imageSize = new Size(64, 64);
     im.cornerRadius = 13;
   }
 } catch (e) {}
 
-widget.addSpacer(8);
-const bar = widget.addImage(progressBar(data.percentLeft));
-bar.imageSize = new Size(barWidth(), 12);
+main.addSpacer(8);
 
-widget.addSpacer(7);
+const right = main.addStack();
+right.layoutVertically();
+const title = right.addText("Muse");
+title.font = Font.boldSystemFont(13);
+title.textColor = new Color("#bfe3ff");
+const label = right.addText("本周剩余");
+label.font = Font.systemFont(11);
+label.textColor = new Color("#d7efff");
+right.addSpacer(2);
+const big = right.addText(`${data.percentLeft}%`);
+big.font = Font.boldSystemFont(26);
+big.textColor = Color.white();
+
+widget.addSpacer(14);
+const bar = widget.addImage(progressBar(data.percentLeft));
+bar.imageSize = new Size(barWidth(), 14);
+
+widget.addSpacer(8);
+const chip = widget.addStack();
+chip.layoutHorizontally();
+chip.backgroundColor = new Color("#ffffff", 0.18);
+chip.cornerRadius = 8;
+chip.setPadding(4, 8, 4, 8);
 const upd = data.updatedAt ? new Date(data.updatedAt) : new Date();
-const u = widget.addText(fmtDate(upd));
+const u = chip.addText(`Updated ${fmtDate(upd)}`);
 u.font = Font.systemFont(10);
-u.textColor = new Color("#a8d4f5");
+u.textColor = new Color("#eaf6ff");
 widget.addSpacer();
 
 widget.url = "https://muse.ai/chat";
