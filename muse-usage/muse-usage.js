@@ -1,4 +1,4 @@
-// Muse Usage Widget v3 for Scriptable (iOS)
+// Muse Usage Widget v4 for Scriptable (iOS)
 // 蓝色主题 + 敲电脑形象（BASE64 内嵌）+ 圆角胶囊进度条
 // 数据源：GitHub 上的 usage.json，由 Muse 每 3 小时自动更新
 
@@ -69,6 +69,7 @@ grad.locations = [0, 0.55, 1];
 widget.backgroundGradient = grad;
 widget.setPadding(12, 12, 12, 12);
 
+widget.addSpacer();
 const main = widget.addStack();
 main.layoutHorizontally();
 main.topAlignContent();
@@ -97,12 +98,12 @@ try {
     tile.cornerRadius = 16;
     tile.setPadding(3, 3, 3, 3);
     const im = tile.addImage(avatar);
-    im.imageSize = new Size(52, 52);
+    im.imageSize = new Size(60, 60);
     im.cornerRadius = 13;
   }
 } catch (e) {}
 
-widget.addSpacer(10);
+widget.addSpacer(8);
 const bar = widget.addImage(progressBar(data.percentLeft));
 bar.imageSize = new Size(barWidth(), 12);
 
@@ -111,6 +112,7 @@ const upd = data.updatedAt ? new Date(data.updatedAt) : new Date();
 const u = widget.addText(fmtDate(upd));
 u.font = Font.systemFont(10);
 u.textColor = new Color("#a8d4f5");
+widget.addSpacer();
 
 widget.refreshAfterDate = new Date(Date.now() + 15 * 60 * 1000);
 
