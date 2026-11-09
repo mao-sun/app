@@ -1,4 +1,4 @@
-// Muse Usage Widget v4 for Scriptable (iOS)
+// Muse Usage Widget v5 for Scriptable (iOS)
 // 蓝色主题 + 敲电脑形象（BASE64 内嵌）+ 圆角胶囊进度条
 // 数据源：GitHub 上的 usage.json，由 Muse 每 3 小时自动更新
 
@@ -114,6 +114,7 @@ u.font = Font.systemFont(10);
 u.textColor = new Color("#a8d4f5");
 widget.addSpacer();
 
+widget.url = "https://muse.ai/chat";
 widget.refreshAfterDate = new Date(Date.now() + 15 * 60 * 1000);
 
 if (config.runsInWidget) {
